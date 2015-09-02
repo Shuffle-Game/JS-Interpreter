@@ -24,6 +24,10 @@ var
                     // faked, and happy linter!
   ;
 
+function isFunction(functionToCheck) {
+  var getType = {};
+  return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+}
 function generateReplacer(value, replacer, resolve) {
   var
     path = [],
@@ -39,6 +43,12 @@ function generateReplacer(value, replacer, resolve) {
     // if a new object should be returned
     // or if there's some key to drop
     // let's call it here rather than "too late"
+
+    if(  isFunction(value)){
+      return "__________"+value.toString();
+    }
+
+
     if (replacer) value = replacer.call(this, key, value);
 
     // did you know ? Safari passes keys as integers for arrays
@@ -93,8 +103,14 @@ function generateReviver(reviver) {
   return function(key, value) {
     var isString = typeof value === 'string';
     if (isString && value.charAt(0) === specialChar) {
+
       return new $String(value.slice(1));
     }
+    if(isString && value.indexOf("__________")==0){
+      return eval("("+value.slice("__________".length)+")");
+    }
+
+
     if (key === '') value = regenerate(value, value, {});
     // again, only one needed, do not use the RegExp for this replacement
     // only keys need the RegExp
@@ -205,6 +221,7 @@ var Interpreter = function(code, opt_initFunc) {
   this.ast = acorn.parse(code);
   this.paused_ = false;
   var scope = this.createScope(this.ast, null);
+  this._globalScope=scope;
   this.stateStack = [{node: this.ast, scope: scope, thisExpression: scope}];
 };
 
